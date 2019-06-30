@@ -1,0 +1,169 @@
+import java.io.*;
+import java.util.*;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.interactions.Action;
+import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.support.ui.Select;
+
+public class CleartripCompleteTest {
+	
+	public static XSSFWorkbook workbook = null;
+	public static XSSFSheet sheet = null;
+	public static XSSFRow row = null;
+	public static XSSFCell cell = null;
+	public static int coloumn_no=4,row_no=1;
+	
+	public static void main(String[] args) throws Exception {
+		// TODO Auto-generated method stub
+		/*ArrayList<String> data_ar = getData("TC01");
+		for(String s:data_ar)
+		{System.out.println(s);}*/
+		int count = 0;
+		ArrayList<String> arr = new ArrayList<String>();
+		arr.add("TC01");
+		arr.add("TC02");
+		//System.out.println(arr.get(0));
+		System.setProperty("webdriver.chrome.driver", "D:\\Jars\\chromedriver.exe");
+		WebDriver driver = new ChromeDriver();
+		
+		for(int j=0;j<2;j++)
+		{
+		ArrayList<String> data_ar = getData(arr.get(count));
+		count++;
+		int temp=1;
+		driver.get("https://www.cleartrip.com/");
+		driver.manage().window().maximize();
+		driver.findElement(By.id("OneWay")).click();
+		Actions a = new Actions(driver);
+		a.moveToElement(driver.findElement(By.id("FromTag"))).click().sendKeys(data_ar.get(temp)).build().perform();
+		Thread.sleep(1000);
+		a.moveToElement(driver.findElement(By.id("ToTag"))).click().sendKeys(data_ar.get(temp+1)).build().perform();
+		Thread.sleep(1000);
+		driver.findElement(By.id("DepartDate")).click();
+		while(!driver.findElement(By.xpath("//div[@id='ui-datepicker-div']/div[1]/div/div/span[1]")).getText().equalsIgnoreCase("December"))
+		{
+			driver.findElement(By.xpath("//a[@class='nextMonth ']")).click();
+			Thread.sleep(500);
+		}
+		List<WebElement> dates = driver.findElements(By.xpath("//td[@data-handler='selectDay']"));
+		for(WebElement d:dates)
+		{
+			if(d.getText().equalsIgnoreCase("27"))
+			{
+				d.click();
+				break;
+			}
+		}
+		Select s = new Select(driver.findElement(By.id("Adults")));
+		s.selectByValue("3");
+		Thread.sleep(1000);
+		Select s1 = new Select(driver.findElement(By.id("Childrens")));
+		s1.selectByValue("2");
+		Thread.sleep(1000);
+		Select s2 = new Select(driver.findElement(By.id("Infants")));
+		s2.selectByValue("2");
+		Thread.sleep(1000);
+		driver.findElement(By.id("MoreOptionsLink")).click();
+		Thread.sleep(1000);
+		driver.findElement(By.id("AirlineAutocomplete")).click();
+		driver.findElement(By.id("AirlineAutocomplete")).sendKeys(data_ar.get(temp+2));
+		Thread.sleep(2000);
+		for(int i=0;i<3;i++)
+		{
+			driver.findElement(By.id("AirlineAutocomplete")).sendKeys(Keys.ARROW_DOWN);
+			Thread.sleep(1000);
+		}
+		driver.findElement(By.id("AirlineAutocomplete")).sendKeys(Keys.ENTER);
+		driver.findElement(By.id("SearchBtn")).click();
+		if(driver.findElement(By.id("homeErrorMessage")).isDisplayed())
+		{
+			setData("FAIL");
+			//System.out.println("FAIL");
+		}
+		else
+		{
+			setData("PASS");
+			//System.out.println("PASS");
+		}
+		}
+		driver.close();
+	}
+	
+	public static ArrayList<String> getData(String tc_name) throws Exception
+	{
+		ArrayList<String> ar = new ArrayList<String>();
+		FileInputStream fin = new FileInputStream("D:\\Selenium Automation\\Testdata.xlsx");
+		workbook = new XSSFWorkbook(fin);
+		int sheetcount = workbook.getNumberOfSheets();
+		for(int i=0;i<sheetcount;i++)
+		{
+			if(workbook.getSheetAt(i).getSheetName().equalsIgnoreCase("Second"))
+			{
+				sheet = workbook.getSheetAt(i);
+				Iterator<Row> sheetrow = sheet.iterator();
+				Row firstrow = sheetrow.next();
+				Iterator<Cell> rowcell = firstrow.cellIterator();
+				int k=0,colum=0;
+				while(rowcell.hasNext())
+				{
+					Cell value = rowcell.next();
+					if(value.getStringCellValue().equalsIgnoreCase("Testcases"))
+					{
+						colum=k;
+					}
+					k++;
+				}
+				while(sheetrow.hasNext())
+				{
+					Row allrow = sheetrow.next();
+					if(allrow.getCell(colum).getStringCellValue().equalsIgnoreCase(tc_name))
+					{
+						Iterator<Cell> cells = allrow.cellIterator();
+						while(cells.hasNext())
+						{
+							ar.add(cells.next().getStringCellValue());
+						}
+					}
+				}
+			}
+		}
+		return ar;
+	}
+	
+	public static void setData(String result) throws Exception
+	{
+		FileInputStream fin = new FileInputStream("D:\\Selenium Automation\\Testdata.xlsx");
+		workbook = new XSSFWorkbook(fin);
+		int sheetcount = workbook.getNumberOfSheets();
+		for(int i = 0;i<sheetcount;i++)
+		{
+			if(workbook.getSheetAt(i).getSheetName().equalsIgnoreCase("Second"));
+			sheet = workbook.getSheetAt(i);
+			row=sheet.getRow(row_no);
+			if(row==null)
+				row=sheet.createRow(row_no);
+			cell = row.getCell(coloumn_no);
+			if(cell == null)
+				cell = row.createCell(coloumn_no);
+			cell.setCellValue(result);			
+		}
+		row_no++;
+		FileOutputStream out = new FileOutputStream("D:\\Selenium Automation\\Testdata.xlsx");
+		workbook.write(out);
+		out.close();
+		
+		
+	}
+
+}
